@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DbD Incremental - Resurrection</title>
+    <style>
+        :root {
+            --bg-color: #080808;
+            --panel-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent-bp: #ff4d00;
+            --accent-is: #00ffff;
+            --accent-asc: #ff00ff;
+            --accent-tra: #ffff00;
+            --success-color: #4CAF50;
+            --fail-color: #f44336;
+            --text-color: #e0e0e0;
+            --text-dim: #888;
+            --needle-color: #fff;
+            --sc-target-color: rgba(255, 255, 255, 0.2);
+            --sc-great-color: #fff;
+            --sc-border-color: rgba(255, 255, 255, 0.1);
+            --panel-border: 1px solid rgba(128, 128, 128, 0.2);
+            --progress-bg: rgba(0, 0, 0, 0.5);
+            --key-bg: rgba(0, 0, 0, 0.2);
+            --key-border-color: rgba(0, 0, 0, 0.4);
+            --panel-item-bg: rgba(128, 128, 128, 0.1);
+        }
+
+        /* スキン設定 */
+        .skin-default {
+            --accent-bp: #ff4d00;
+            --bg-gradient: radial-gradient(circle at center, #1a1a1a 0%, #080808 100%);
+        }
+
+        .skin-blood {
+            --accent-bp: #880000;
+            --bg-gradient: radial-gradient(circle at center, #330000 0%, #080000 100%);
+        }
+
+        .skin-neon {
+            --accent-bp: #00ff00;
+            --bg-gradient: radial-gradient(circle at center, #001a00 0%, #000800 100%);
+        }
+
+        .skin-void {
+            --accent-bp: #4b0082;
+            --bg-gradient: radial-gradient(circle at center, #1a0033 0%, #080008 100%);
+        }
+
+        .skin-cute {
+            --accent-bp: #ff69b4;
+            --bg-gradient: radial-gradient(circle at center, #fff0f5 0%, #ffc0cb 100%);
+            --text-color: #5d2a42;
+            --text-dim: #8b5a6d;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --panel-color: #fff0f5;
+            --needle-color: #c71585;
+            --sc-target-color: rgba(199, 21, 133, 0.2);
+            --sc-great-color: #c71585;
+            --sc-border-color: rgba(199, 21, 133, 0.15);
+            --panel-border: 1px solid rgba(199, 21, 133, 0.2);
+            --progress-bg: rgba(255, 182, 193, 0.3);
+            --key-bg: #ffb6c1;
+            --key-border-color: #ff69b4;
+            --panel-item-bg: rgba(255, 182, 193, 0.4);
+            --bg-color: #fffafc;
+        }
+
+        .skin-midnight {
+            --accent-bp: #00ced1;
+            --bg-gradient: linear-gradient(135deg, #000c1a 0%, #001f3f 100%);
+            --needle-color: #00ffff;
+        }
+
+        .skin-golden {
+            --accent-bp: #ffd700;
+            --bg-gradient: radial-gradient(circle at center, #fff 0%, #f7e7ce 100%);
+            --text-color: #4a3e10;
+            --card-bg: #fffbf0;
+            --needle-color: #b8860b;
+            --sc-target-color: rgba(184, 134, 11, 0.3);
+            --sc-great-color: #8b6508;
+            --sc-border-color: rgba(184, 134, 11, 0.2);
+            --panel-border: 1px solid rgba(184, 134, 11, 0.3);
+            --progress-bg: rgba(218, 165, 32, 0.15);
+            --key-bg: #fdf5e6;
+            --key-border-color: #daa520;
+            --panel-item-bg: rgba(218, 165, 32, 0.1);
+            --text-dim: #8b6508;
+            --bg-color: #fffbf0;
+            --panel-color: #fdf5e6;
+        }
+
+        .skin-emerald {
+            --accent-bp: #2ecc71;
+            --bg-gradient: linear-gradient(180deg, #0a1f0a 0%, #000 100%);
+            --needle-color: #00ff7f;
+        }
+
+        .skin-cute .needle {
+            background: var(--needle-color);
+            box-shadow: 0 0 15px var(--needle-color);
+            width: 5px;
+        }
+
+        .skin-cute .needle {
+            background: var(--needle-color);
+            box-shadow: 0 0 10px rgba(255, 20, 147, 0.5);
+        }
+
+        .skin-cute .key {
+            background: #ffb6c1;
+            border-bottom-color: #ff69b4;
+            color: #fff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 15px;
+            gap: 10px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: var(--panel-color);
+            border-radius: 8px;
+            border: var(--panel-border);
+        }
+
+        .title-group h1 {
+            font-size: 1.5rem;
+            color: var(--accent-bp);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .currency-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .currency {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .currency .label {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .currency .value {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .bp-val {
+            color: var(--accent-bp);
+        }
+
+        .is-val {
+            color: var(--accent-is);
+        }
+
+        .ap-val {
+            color: var(--accent-asc);
+        }
+
+        .tp-val {
+            color: var(--accent-tra);
+            text-shadow: 0 0 10px var(--accent-tra);
+        }
+
+        main {
+            display: flex;
+            flex: 1;
+            gap: 15px;
+            overflow: hidden;
+        }
+
+        .game-view {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-gradient, radial-gradient(circle at center, #1a1a1a 0%, #080808 100%));
+            border-radius: 12px;
+            border: var(--panel-border);
+            position: relative;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .generator-box {
+            width: 80%;
+            margin-bottom: 40px;
+            z-index: 1;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 24px;
+            background: var(--progress-bg);
+            border-radius: 12px;
+            border: 2px solid var(--sc-border-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--accent-bp);
+            box-shadow: 0 0 15px var(--accent-bp);
+            transition: width 0.1s linear;
+        }
+
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            z-index: 2;
+        }
+
+        .skill-check-area {
+            position: relative;
+            width: 240px;
+            height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sc-circle-border {
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            border: 8px solid var(--sc-border-color);
+            border-radius: 50%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .sc-center-container {
+            position: absolute;
+            width: 0;
+            height: 0;
+            top: 120px;
+            left: 120px;
+        }
+
+        .needle {
+            position: absolute;
+            width: 4px;
+            height: 120px;
+            background: var(--needle-color, #fff);
+            left: -2px;
+            bottom: 0;
+            transform-origin: bottom center;
+            box-shadow: 0 0 10px var(--needle-color, #fff);
+            z-index: 10;
+            display: none;
+        }
+
+        .target-zone,
+        .great-zone {
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            top: -120px;
+            left: -120px;
+            pointer-events: none;
+        }
+
+        .notice-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 50;
+        }
+
+        .notice {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            display: none;
+        }
+
+        .asc-notice {
+            background: var(--accent-asc);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-asc);
+            animation: blink 1s infinite;
+        }
+
+        .tra-notice {
+            background: var(--accent-tra);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-tra);
+            animation: tra-glow 2s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes tra-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px var(--accent-tra);
+            }
+
+            50% {
+                box-shadow: 0 0 30px var(--accent-tra);
+            }
+        }
+
+        .sidebar {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 2px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 6px;
+            background: var(--panel-item-bg);
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .tab.active {
+            background: var(--accent-bp);
+            color: #000;
+        }
+
+        .tab.is-tab.active {
+            background: var(--accent-is);
+            color: #000;
+        }
+
+        .tab.asc-tab.active {
+            background: var(--accent-asc);
+            color: #000;
+        }
+
+        .tab.tra-tab.active {
+            background: var(--accent-tra);
+            color: #000;
+        }
+
+        .upgrade-card {
+            background: var(--card-bg);
+            padding: 10px;
+            border-radius: 8px;
+            border: var(--panel-border);
+            transition: 0.2s;
+            cursor: pointer;
+            margin-bottom: 6px;
+            position: relative;
+            color: var(--text-color);
+        }
+
+        .upgrade-card:hover:not(.disabled) {
+            border-color: rgba(128, 128, 128, 0.5);
+        }
+
+        .upgrade-card.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .upgrade-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .upgrade-name {
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .upgrade-level {
+            font-size: 0.65rem;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 1px 6px;
+            border-radius: 10px;
+        }
+
+        .upgrade-desc {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+            line-height: 1.2;
+        }
+
+        .upgrade-effect {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            padding: 4px;
+            background: var(--panel-item-bg);
+            border-radius: 4px;
+        }
+
+        .system-panel {
+            margin-top: auto;
+            padding: 10px;
+            background: var(--panel-color);
+            border-radius: 8px;
+            border: var(--panel-border);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .save-btn {
+            flex: 1;
+            padding: 5px;
+            font-size: 0.65rem;
+            background: var(--panel-item-bg);
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+            color: inherit;
+        }
+
+        #notify {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            opacity: 0;
+            transition: 0.3s;
+            z-index: 100;
+        }
+
+        .controls-info {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .key {
+            min-width: 80px;
+            padding: 3px 8px;
+            background: var(--key-bg);
+            border-radius: 4px;
+            border-bottom: 2px solid var(--key-border-color);
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .skin-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+
+        .skin-opt {
+            padding: 3px 8px;
+            border: 1px solid rgba(128, 128, 128, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.6rem;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .skin-opt.active {
+            background: var(--accent-bp);
+            color: #000;
+            border-color: transparent;
+        }
+
+        .skin-opt.locked {
+            opacity: 0.15;
+            cursor: not-allowed;
+        }
+
+        .working .generator-box {
+            animation: shake 0.1s infinite;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            50% {
+                transform: translate(1px, 1px);
+            }
+        }
+    </style>
+</head>
+
+<body id="app-body">
+    <div id="app">
+        <header>
+            <h1>DbD Evolution</h1>
+            <div class="currency-group">
+                <div class="currency"><span class="label">BP</span><span class="value bp-val" id="bp-display">0</span>
+                </div>
+                <div class="currency"><span class="label">IS</span><span class="value is-val" id="is-display">0</span>
+                </div>
+                <div class="currency"><span class="label">AP</span><span class="value ap-val" id="ap-display">0</span>
+                </div>
+                <div class="currency"><span class="label">TP</span><span class="value tp-val" id="tp-display">0</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="notice-container">
+            <div id="asc-notice" class="notice asc-notice" onclick="switchTab('asc')">昇華可能</div>
+            <div id="tra-notice" class="notice tra-notice" onclick="switchTab('tra')">超越可能</div>
+        </div>
+
+        <main>
+            <div class="game-view" id="game-click-area">
+                <div class="generator-box">
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progress-bar"></div>
+                        <div class="progress-text" id="progress-text">0.00%</div>
+                    </div>
+                </div>
+                <div class="skill-check-area">
+                    <div class="sc-circle-border"></div>
+                    <div class="sc-center-container" id="sc-circle">
+                        <div id="target-zone" class="target-zone"></div>
+                        <div id="great-zone" class="great-zone"></div>
+                        <div id="needle" class="needle"></div>
+                    </div>
+                </div>
+                <div class="controls-info">
+                    <div class="control-item"><span class="key">HOLD</span> <span>修理</span></div>
+                    <div class="control-item"><span class="key">RELEASE</span> <span>判定</span></div>
+                </div>
+                <div
+                    style="position: absolute; bottom: 20px; right: 20px; text-align: right; color: var(--text-dim); font-size: 0.75rem;">
+                    Speed: <span id="stat-repair-speed">0.00</span>%/s<br>
+                    Gens: <span id="stat-gen-count">0</span><br>
+                    Mult: <span id="stat-multiplier" style="color:var(--accent-tra)">x1.0</span>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="tab-container">
+                    <button class="tab bp-tab active" onclick="switchTab('bp')">BP</button>
+                    <button class="tab is-tab" onclick="switchTab('is')">IS</button>
+                    <button class="tab asc-tab" onclick="switchTab('asc')">昇華</button>
+                    <button class="tab tra-tab" onclick="switchTab('tra')" id="tab-tra-btn"
+                        style="display:none;">超越</button>
+                </div>
+                <div id="upgrade-container"></div>
+                <div class="system-panel">
+                    <div class="save-group">
+                        <button class="save-btn" onclick="saveGame()">SAVE</button>
+                        <button class="save-btn" onclick="loadGame()">LOAD</button>
+                    </div>
+                    <div id="status-info"
+                        style="font-size: 0.65rem; color: var(--text-dim); text-align: center; margin: 5px 0; border-top: 1px solid rgba(128,128,128,0.1); padding-top: 5px;">
+                        <span id="next-asc-info"></span><br>
+                        <span id="total-asc-info"></span>
+                    </div>
+                    <button class="save-btn" onclick="fullResetInternal()"
+                        style="background: rgba(255,0,0,0.1); color: #f55; margin-top: 5px;">【完全リセット】データを全て消去</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="notify">SAVED</div>
+
+    <script>
+        const SAVE_FINAL_KEY = 'dbd_evolution_v6_final_stabilized';
+        const CONFIG = { BASE_REPAIR_SPEED: 0.5, BASE_NEEDLE_SPEED: 340, SC_COOLDOWN: 4500 };
+
+        const DEFAULT_GAME = {
+            bp: 0, is: 0, ap: 0, tp: 0,
+            genFinished: 0, totalGenFinished: 0,
+            ascensionLevel: 0, transcendenceLevel: 0,
+            progress: 0,
+            upgrades: {
+                toolbox: 0, precision: 0, sc_bonus: 0, sc_frequency: 0,
+                auto_repair: 0, mastery: 0,
+                // IS拡張
+                shard_refinery: 0, repair_overdrive: 0, bp_efficiency: 0
+            },
+            ascUpgrades: {
+                ap_gain: 0, auto_check: 0, great_buff: 0, is_boost: 0, needle_stabilizer: 0,
+                skin_unlock: 0,
+                // 昇華拡張
+                asc_speed_boost: 0, asc_bp_multiplier: 0
+            },
+            traUpgrades: {
+                tra_mult: 0, tra_speed: 0, tra_auto_asc: 0
+            },
+            activeSkin: 'default'
+        };
+
+        let game = JSON.parse(JSON.stringify(DEFAULT_GAME));
+        let temp = { isRepairing: false, skillCheckActive: false, needleAngle: 0, targetRange: [0, 0], greatRange: [0, 0], activeTab: 'bp', scTimer: null };
+        let lastTime = 0;
+
+        // 安全に数値を取得（NaN対策）
+        function n(val, fallback = 0) { return (typeof val === 'number' && !isNaN(val)) ? val : fallback; }
+
+        function f(num) {
+            num = n(num);
+            if (num < 100000) return Math.floor(num).toLocaleString();
+            return num.toExponential(2).replace('+', '');
+        }
+
+        const DEF = {
+            bp: {
+                toolbox: { name: "改良工具箱", desc: "修理速度向上。", cost: (l) => Math.floor(50 * Math.pow(1.5, n(l))), effect: (l) => n(l) * 0.5, format: (v) => `+${v.toFixed(1)}%/s` },
+                precision: { name: "精密技術", desc: "判定拡大 & 針減速。", cost: (l) => Math.floor(100 * Math.pow(1.7, n(l))), effect: (l) => ({ width: n(l) * 8, speed: Math.max(0.4, 1 - n(l) * 0.04) }), format: (v) => `+${v.width}°, x${v.speed.toFixed(2)}`, max: 15 },
+                sc_bonus: { name: "BP収穫", desc: "スキルチェックBP増益。", cost: (l) => Math.floor(80 * Math.pow(1.6, n(l))), effect: (l) => n(l) * 0.5, format: (v) => `x${(1 + v).toFixed(1)}` },
+                sc_frequency: { name: "集中力", desc: "判定発生短縮。", cost: (l) => Math.floor(200 * Math.pow(2, n(l))), effect: (l) => n(l) * 200, format: (v) => `-${(v / 1000).toFixed(1)}s`, max: 16 }
+            },
+            is: {
+                auto_repair: { name: "自動修理装置", desc: "放置修理。", cost: (l) => Math.floor(1 + n(l) * 2), effect: (l) => n(l) * 0.3, format: (v) => `+${v.toFixed(1)}%/s` },
+                mastery: { name: "超越的な知識", desc: "価格割引 & 倍率上昇。", cost: (l) => Math.floor(5 + n(l) * 5), effect: (l) => Math.pow(1.2, n(l)), format: (v) => `x${v.toFixed(1)}` },
+                shard_refinery: { name: "IS精錬所", desc: "IS獲得量向上。", cost: (l) => Math.floor(10 + n(l) * 10), effect: (l) => 1 + n(l) * 1.0, format: (v) => `x${v.toFixed(1)}` },
+                repair_overdrive: { name: "修理OS強化", desc: "修理速度倍増。", cost: (l) => Math.floor(25 + n(l) * 25), effect: (l) => 1 + n(l) * 0.5, format: (v) => `x${v.toFixed(1)}` },
+                bp_efficiency: { name: "BP循環効率", desc: "BP獲得にIS倍率を適用。", cost: (l) => Math.floor(50 + n(l) * 50), effect: (l) => 1 + n(l) * 0.2, format: (v) => `x${v.toFixed(1)}` }
+            },
+            asc: {
+                ap_gain: { name: "効率的昇華", desc: "AP獲得量増加。", cost: (l) => Math.floor(1 + Math.pow(n(l), 1.5)), effect: (l) => 1 + n(l) * 0.2, format: (v) => `x${v.toFixed(1)}` },
+                auto_check: { name: "自動回避", desc: "失敗時、確率回避。", cost: (l) => Math.floor(3 + n(l) * 3), effect: (l) => Math.min(0.8, n(l) * 0.1), format: (v) => `${(v * 100).toFixed(0)}%`, max: 8 },
+                great_buff: { name: "至高の職人", desc: "Great判定強化。", cost: (l) => Math.floor(5 + n(l) * 5), effect: (l) => 1 + n(l) * 0.5, format: (v) => `x${v.toFixed(1)}` },
+                is_boost: { name: "シャード共鳴", desc: "IS獲得量増加。", cost: (l) => Math.floor(2 + n(l) * 4), effect: (l) => 1 + n(l) * 0.5, format: (v) => `x${v.toFixed(1)}` },
+                needle_stabilizer: { name: "針の安定化", desc: "針の開始位置。", cost: (l) => Math.floor(10 + n(l) * 10), effect: (l) => Math.min(90, n(l) * 15), format: (v) => `+${v}°`, max: 6 },
+                skin_unlock: { name: "外装拡張", desc: "新スキン解放。", cost: (l) => [2, 5, 12, 25, 40, 60, 99][n(l)] || 999, effect: (l) => n(l), format: (v) => `Lv.${v}`, max: 7 },
+                asc_speed_boost: { name: "次元修理", desc: "全修理速度を大幅強化。", cost: (l) => Math.floor(15 + n(l) * 15), effect: (l) => Math.pow(2, n(l)), format: (v) => `x${v.toFixed(0)}` },
+                asc_bp_multiplier: { name: "次元BP倍率", desc: "全BP獲得を大幅強化。", cost: (l) => Math.floor(20 + n(l) * 20), effect: (l) => Math.pow(3, n(l)), format: (v) => `x${v.toFixed(0)}` }
+            },
+            tra: {
+                tra_mult: { name: "魂の渇望", desc: "全リソース獲得倍率強化。", cost: (v) => Math.floor(1 * Math.pow(10, n(v))), effect: (l) => Math.pow(10, n(l)), format: (v) => `x${f(v)}` },
+                tra_speed: { name: "次元の加速", desc: "修理の基礎速度を強化。", cost: (v) => Math.floor(5 * Math.pow(5, n(v))), effect: (l) => n(l) * 1.0, format: (v) => `+${v.toFixed(1)}%/s` },
+                tra_auto_asc: { name: "自動昇華", desc: "条件を満たし次第、自動で昇華。", cost: (v) => 100, effect: (l) => n(l) > 0, format: (v) => v ? "有効" : "無効", max: 1 }
+            }
+        };
+
+        const SKINS = {
+            default: { name: "Classic", class: "skin-default", unlocked: () => true },
+            blood: { name: "Blood", class: "skin-blood", unlocked: () => n(game.ascUpgrades.skin_unlock) >= 1 },
+            neon: { name: "Neon", class: "skin-neon", unlocked: () => n(game.ascUpgrades.skin_unlock) >= 2 },
+            void: { name: "Void", class: "skin-void", unlocked: () => n(game.ascUpgrades.skin_unlock) >= 3 },
+            cute: { name: "Kawaii🎀", class: "skin-cute", unlocked: () => n(game.ascUpgrades.skin_unlock) >= 4 },
+            midnight: { name: "Midnight", class: "skin-midnight", unlocked: () => n(game.ascUpgrades.skin_unlock) >= 5 },
+            golden: { name: "Golden", class: "skin-golden", unlocked: () => n(game.ascUpgrades.skin_unlock) >= 6 },
+            emerald: { name: "Emerald", class: "skin-emerald", unlocked: () => n(game.ascUpgrades.skin_unlock) >= 7 }
+        };
+
+        function getMultiplier() {
+            return n(DEF.is.mastery.effect(game.upgrades.mastery)) * (1 + n(game.ascensionLevel) * 0.5) * Math.pow(1000, n(game.transcendenceLevel)) * n(DEF.tra.tra_mult.effect(game.traUpgrades.tra_mult), 1);
+        }
+
+        function getBPMultiplier() {
+            return n(DEF.asc.asc_bp_multiplier.effect(game.ascUpgrades.asc_bp_multiplier), 1) * n(DEF.is.bp_efficiency.effect(game.upgrades.bp_efficiency), 1);
+        }
+
+        function getRepairSpeedMultiplier() {
+            return n(DEF.asc.asc_speed_boost.effect(game.ascUpgrades.asc_speed_boost), 1) * n(DEF.is.repair_overdrive.effect(game.upgrades.repair_overdrive), 1);
+        }
+
+        function getBaseRepairSpeed() {
+            return CONFIG.BASE_REPAIR_SPEED + n(DEF.tra.tra_speed.effect(game.traUpgrades.tra_speed));
+        }
+
+        function getISMultiplier() {
+            return n(DEF.is.shard_refinery.effect(game.upgrades.shard_refinery), 1) * n(DEF.asc.is_boost.effect(game.ascUpgrades.is_boost), 1);
+        }
+
+        function init() {
+            loadGame();
+            applySkin(game.activeSkin || 'default');
+            updateUI();
+            requestAnimationFrame(gameLoop);
+
+            const area = document.getElementById('game-click-area');
+            const start = (e) => {
+                if (e.target.closest('.upgrade-card') || e.target.closest('.sidebar') || e.target.closest('.skin-opt')) return;
+                temp.isRepairing = true;
+                if (temp.scTimer) clearInterval(temp.scTimer);
+                const freq = Math.max(1200, CONFIG.SC_COOLDOWN - DEF.bp.sc_frequency.effect(game.upgrades.sc_frequency));
+                temp.scTimer = setInterval(() => {
+                    if (temp.isRepairing && !temp.skillCheckActive) triggerSkillCheck();
+                }, freq);
+            };
+            const stop = () => { if (temp.isRepairing) { temp.isRepairing = false; if (temp.skillCheckActive) handleSkillCheck(); clearInterval(temp.scTimer); } };
+
+            area.addEventListener('mousedown', start);
+            window.addEventListener('mouseup', stop);
+            window.addEventListener('keydown', (e) => { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); start(e); } });
+            window.addEventListener('keyup', (e) => { if (e.code === 'Space') stop(); });
+        }
+
+        function triggerSkillCheck() {
+            temp.skillCheckActive = true;
+            temp.needleAngle = n(DEF.asc.needle_stabilizer.effect(game.ascUpgrades.needle_stabilizer));
+            const needle = document.getElementById('needle');
+            if (needle) needle.style.display = 'block';
+            const prec = DEF.bp.precision.effect(game.upgrades.precision);
+            const start = 140 + Math.random() * 120; const end = start + 20 + n(prec.width);
+            temp.targetRange = [start, end]; temp.greatRange = [start, start + 5];
+
+            // スタイルから現在のスキンの色を取得
+            const style = getComputedStyle(document.body);
+            const targetColor = style.getPropertyValue('--sc-target-color').trim();
+            const greatColor = style.getPropertyValue('--sc-great-color').trim();
+
+            document.getElementById('target-zone').style.background = `conic-gradient(transparent ${start}deg, ${targetColor} ${start}deg, ${targetColor} ${end}deg, transparent ${end}deg)`;
+            document.getElementById('great-zone').style.background = `conic-gradient(transparent ${start}deg, ${greatColor} ${start}deg, ${greatColor} ${start + 5}deg, transparent ${start + 5}deg)`;
+        }
+
+        function handleSkillCheck() {
+            if (!temp.skillCheckActive) return;
+            const angle = temp.needleAngle % 360; const mult = getMultiplier();
+            const bpBonus = 1 + n(DEF.bp.sc_bonus.effect(game.upgrades.sc_bonus));
+            const gMult = n(DEF.asc.great_buff.effect(game.ascUpgrades.great_buff));
+
+            if (angle >= temp.greatRange[0] && angle <= temp.greatRange[1]) {
+                game.progress += 25 * mult * gMult * getRepairSpeedMultiplier();
+                game.bp += 1000 * mult * bpBonus * gMult * getBPMultiplier();
+                notify("GREAT!");
+            } else if (angle >= temp.targetRange[0] && angle <= temp.targetRange[1]) {
+                game.progress += 4 * mult * getRepairSpeedMultiplier();
+                game.bp += 60 * mult * bpBonus * getBPMultiplier();
+                notify("GOOD");
+            } else {
+                if (Math.random() < DEF.asc.auto_check.effect(game.ascUpgrades.auto_check)) notify("EVADED!");
+                else game.progress = Math.max(0, game.progress - 15);
+            }
+            temp.skillCheckActive = false;
+            document.getElementById('needle').style.display = 'none';
+            document.getElementById('target-zone').style.background = document.getElementById('great-zone').style.background = 'none';
+            updateUI();
+        }
+
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            let dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+            if (dt > 0.5) dt = 0; // スパイク用
+
+            let speed = 0; const mult = getMultiplier();
+            if (temp.isRepairing) {
+                speed += (getBaseRepairSpeed() + n(DEF.bp.toolbox.effect(game.upgrades.toolbox)));
+                document.getElementById('app-body').classList.add('working');
+            } else { document.getElementById('app-body').classList.remove('working'); }
+            speed += n(DEF.is.auto_repair.effect(game.upgrades.auto_repair));
+            speed *= getRepairSpeedMultiplier();
+
+            if (speed > 0) {
+                game.progress += speed * mult * dt;
+                document.getElementById('stat-repair-speed').textContent = f(speed * mult);
+            } else document.getElementById('stat-repair-speed').textContent = "0.00";
+
+            if (temp.skillCheckActive) {
+                const spd = n(DEF.bp.precision.effect(game.upgrades.precision).speed, 1);
+                temp.needleAngle += CONFIG.BASE_NEEDLE_SPEED * spd * dt;
+                document.getElementById('needle').style.transform = `rotate(${temp.needleAngle}deg)`;
+                if (temp.needleAngle > 360) handleSkillCheck();
+            }
+
+            if (game.progress >= 100) {
+                const c = Math.floor(game.progress / 100); game.progress %= 100;
+                game.genFinished += c; game.totalGenFinished += c;
+                game.is += c * mult * getISMultiplier();
+                updateUI();
+
+                // 自動昇華チェック
+                if (DEF.tra.tra_auto_asc.effect(game.traUpgrades.tra_auto_asc)) {
+                    const req = 5 + n(game.ascensionLevel) * 5;
+                    if (game.genFinished >= req) doAscension();
+                }
+            }
+            document.getElementById('progress-bar').style.width = `${game.progress.toFixed(2)}%`;
+            document.getElementById('progress-text').textContent = `${game.progress.toFixed(2)}%`;
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function switchTab(t) { temp.activeTab = t; document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.classList.contains(t + '-tab'))); renderUpgrades(); }
+
+        function renderUpgrades() {
+            const container = document.getElementById('upgrade-container'); container.innerHTML = '';
+            if (temp.activeTab === 'asc') { renderSpecial(); return; }
+            if (temp.activeTab === 'tra') { renderTraUpgrades(); return; }
+            const cat = DEF[temp.activeTab];
+            Object.keys(cat).forEach(id => {
+                const def = cat[id]; const lv = n(game.upgrades[id]);
+                const isMax = def.max && lv >= def.max;
+                const cost = isMax ? 0 : def.cost(lv);
+                const curr = temp.activeTab === 'bp' ? 'bp' : 'is';
+                const card = document.createElement('div');
+                card.className = `upgrade-card ${isMax || game[curr] < cost ? 'disabled' : ''}`;
+                card.setAttribute('data-cost', cost);
+                card.setAttribute('data-currency', curr);
+                if (isMax) card.setAttribute('data-max', 'true');
+                card.innerHTML = `
+                    <div class="upgrade-header"><span class="upgrade-name">${def.name}</span><span class="upgrade-level">${isMax ? 'MAX' : 'Lv.' + lv}</span></div>
+                    <div class="upgrade-desc">${def.desc}</div>
+                    <div class="upgrade-effect">現在: ${def.format(def.effect(lv))} ${isMax ? '' : '<span style="opacity:0.4">→</span> 次: ' + def.format(def.effect(lv + 1))}</div>
+                    <div class="upgrade-footer"><span class="cost-label cost-${curr}">${isMax ? 'MAX' : f(cost) + ' ' + curr.toUpperCase()}</span></div>`;
+                card.onclick = () => { if (!isMax && game[curr] >= cost) { game[curr] -= cost; game.upgrades[id]++; renderUpgrades(); updateUI(); saveGame(); } };
+                container.appendChild(card);
+            });
+        }
+
+        function renderSpecial() {
+            const container = document.getElementById('upgrade-container'); container.innerHTML = '';
+            if (temp.activeTab === 'asc') {
+                const req = 5 + n(game.ascensionLevel) * 5;
+                const gain = Math.floor(n(game.genFinished) / 2 * n(DEF.asc.ap_gain.effect(game.ascUpgrades.ap_gain), 1));
+                const nextGen = 2 - (game.genFinished % 2);
+                let html = `<div class="upgrade-card ${game.genFinished >= req ? '' : 'disabled'}" data-req-gen="${req}" style="border: 1px solid var(--accent-asc); background: rgba(128,0,128,0.05);">
+                    <h3 style="color: var(--accent-asc); margin-bottom: 3px; font-size:0.9rem;">昇華 (Ascension)</h3>
+                    <p style="font-size: 0.7rem; margin-bottom: 4px;">獲得可能: <strong style="color:var(--accent-asc)" id="asc-gain-val">+${f(gain)} AP</strong></p>
+                    <p style="font-size: 0.6rem; color: var(--text-dim); margin-bottom: 8px;" id="asc-next-ap-val">(あと ${nextGen} 修理完了で +1 AP)</p>
+                    <button class="save-btn" style="background: var(--accent-asc); color: #000; font-weight: bold; width: 100%; border:none; padding: 6px; border-radius: 4px;" onclick="doAscension()">昇華を実行</button></div>`;
+
+                if (n(game.ascUpgrades.skin_unlock) > 0) {
+                    html += `<div style="font-size:0.6rem; color:var(--text-dim); margin-top:10px; font-weight:bold;">外装カスタマイズ</div><div class="skin-selector">`;
+                    Object.keys(SKINS).forEach(id => html += `<div class="skin-opt ${SKINS[id].unlocked() ? '' : 'locked'} ${game.activeSkin === id ? 'active' : ''}" onclick="applySkin('${id}')">${SKINS[id].name}</div>`);
+                    html += `</div>`;
+                }
+
+                html += `<div style="margin-top:12px; border-top: 1px solid rgba(128,128,128,0.2); padding-top:8px; font-size:0.7rem; color:var(--accent-asc); font-weight:bold; margin-bottom:5px;">AP永続アップグレード</div>`;
+                Object.keys(DEF.asc).forEach(id => {
+                    const def = DEF.asc[id]; const lv = n(game.ascUpgrades[id]);
+                    const isMax = def.max && lv >= def.max;
+                    const cost = isMax ? 0 : def.cost(lv);
+                    html += `<div class="upgrade-card ${isMax || game.ap < cost ? 'disabled' : ''}" data-cost="${cost}" data-currency="ap" ${isMax ? 'data-max="true"' : ''} onclick="buyAscUpgrade('${id}')">
+                        <div class="upgrade-header"><span class="upgrade-name">${def.name}</span><span class="upgrade-level">${isMax ? 'MAX' : 'Lv.' + lv}</span></div>
+                        <div class="upgrade-desc">${def.desc}</div>
+                        <div class="upgrade-effect">現在: ${def.format(def.effect(lv))} ${isMax ? '' : '<span style="opacity:0.4">→</span> 次: ' + def.format(def.effect(lv + 1))}</div>
+                        <div class="upgrade-footer"><span class="cost-label cost-ap">${isMax ? 'MAX' : f(cost) + ' AP'}</span></div></div>`;
+                });
+                container.innerHTML = html;
+            }
+        }
+
+        function renderTraUpgrades() {
+            const container = document.getElementById('upgrade-container'); container.innerHTML = '';
+            const canTra = n(game.ascensionLevel) >= 10;
+            const gainTP = Math.floor(Math.pow(10, n(game.ascensionLevel) - 10));
+
+            let html = `<div style="margin-top:5px; border-bottom: 1px solid var(--accent-tra); padding-bottom:8px; font-size:0.8rem; color:var(--accent-tra); font-weight:bold; margin-bottom:10px;">超越 (Transcendence)</div>`;
+
+            // 超越実行カード
+            html += `<div class="upgrade-card ${canTra ? '' : 'disabled'}" style="border: 2px solid var(--accent-tra); background: rgba(255,255,0,0.05); margin-bottom:15px;">
+                <h3 style="color: var(--accent-tra); margin-bottom: 5px; font-size:0.9rem;">世界の超越</h3>
+                <p style="font-size: 0.7rem; line-height: 1.4; margin-bottom: 8px;">APアップグレードを含む全てを捧げ、TPを獲得します。<br>
+                獲得可能: <strong style="color:var(--accent-tra)">+${f(gainTP)} TP</strong></p>
+                <p style="font-size: 0.6rem; color: var(--text-dim); margin-bottom: 8px;">初期条件: 昇華Lv.10 到達 (現在: Lv.${game.ascensionLevel})</p>
+                <button class="save-btn" style="background: var(--accent-tra); color: #000; font-weight: bold; width: 100%; border:none; padding: 10px; border-radius: 4px;" onclick="doTranscendence()">超越を実行</button>
+            </div>`;
+
+            html += `<div style="font-size:0.7rem; color:var(--accent-tra); font-weight:bold; margin-bottom:8px;">TP永続アップグレード</div>`;
+            container.innerHTML = html;
+
+            Object.keys(DEF.tra).forEach(id => {
+                const def = DEF.tra[id];
+                const lv = n(game.traUpgrades[id]);
+                const isMax = def.max && lv >= def.max;
+                const cost = isMax ? 0 : def.cost(lv);
+                const card = document.createElement('div');
+                card.className = `upgrade-card ${isMax || game.tp < cost ? 'disabled' : ''}`;
+                card.setAttribute('data-cost', cost);
+                card.setAttribute('data-currency', 'tp');
+                if (isMax) card.setAttribute('data-max', 'true');
+                card.innerHTML = `
+                    <div class="upgrade-header" style="color:var(--accent-tra)"><span class="upgrade-name">${def.name}</span><span class="upgrade-level">${isMax ? 'MAX' : 'Lv.' + lv}</span></div>
+                    <div class="upgrade-desc">${def.desc}</div>
+                    <div class="upgrade-effect">現在: ${def.format(def.effect(lv))} ${isMax ? '' : '<span style="opacity:0.4">→</span> 次: ' + def.format(def.effect(lv + 1))}</div>
+                    <div class="upgrade-footer"><span class="cost-label" style="color:var(--accent-tra)">${isMax ? 'MAX' : f(cost) + ' TP'}</span></div>`;
+                card.onclick = () => { if (!isMax && game.tp >= cost) { game.tp -= cost; game.traUpgrades[id]++; renderTraUpgrades(); updateUI(); saveGame(); } };
+                container.appendChild(card);
+            });
+        }
+
+        function buyAscUpgrade(id) {
+            const def = DEF.asc[id];
+            const lv = n(game.ascUpgrades[id]);
+            if (def.max && lv >= def.max) return;
+            const cost = def.cost(lv);
+            if (game.ap >= cost) { game.ap -= cost; game.ascUpgrades[id]++; renderSpecial(); updateUI(); saveGame(); }
+        }
+        function applySkin(id) { if (SKINS[id] && SKINS[id].unlocked()) { game.activeSkin = id; document.body.className = SKINS[id].class; renderSpecial(); saveGame(); } }
+        function doAscension() { if (game.genFinished < (5 + n(game.ascensionLevel) * 5)) return; game.ascensionLevel++; game.ap += Math.floor(n(game.genFinished) / 2 * n(DEF.asc.ap_gain.effect(game.ascUpgrades.ap_gain), 1)); game.bp = game.is = game.genFinished = game.progress = 0; Object.keys(game.upgrades).forEach(k => game.upgrades[k] = 0); saveGame(); updateUI(); switchTab('bp'); }
+        function doTranscendence() {
+            if (n(game.ascensionLevel) < 10) return;
+            const gainTP = Math.floor(Math.pow(10, n(game.ascensionLevel) - 10));
+            game.transcendenceLevel++;
+            game.tp += gainTP;
+            game.bp = game.is = game.ap = game.genFinished = game.ascensionLevel = 0;
+            Object.keys(game.upgrades).forEach(k => game.upgrades[k] = 0);
+            Object.keys(game.ascUpgrades).forEach(k => game.ascUpgrades[k] = 0);
+            saveGame();
+            updateUI();
+            switchTab('bp');
+            notify(`+${f(gainTP)} TP獲得！`);
+        }
+
+        function updateUI() {
+            document.getElementById('bp-display').textContent = f(game.bp);
+            document.getElementById('is-display').textContent = f(game.is);
+            document.getElementById('ap-display').textContent = f(game.ap);
+            document.getElementById('tp-display').textContent = f(game.tp);
+            document.getElementById('stat-gen-count').textContent = f(game.genFinished);
+            document.getElementById('stat-multiplier').textContent = `x${f(getMultiplier())}`;
+
+            const req = 5 + n(game.ascensionLevel) * 5;
+            document.getElementById('asc-notice').style.display = (game.genFinished >= req) ? 'block' : 'none';
+            document.getElementById('tra-notice').style.display = (n(game.ascensionLevel) >= 10) ? 'block' : 'none';
+
+            const nextInfo = document.getElementById('next-asc-info');
+            if (nextInfo) nextInfo.textContent = `次回の昇華まで: ${Math.max(0, req - game.genFinished)} 修理`;
+            const totalInfo = document.getElementById('total-asc-info');
+            if (totalInfo) totalInfo.textContent = `累計昇華Lv: ${game.ascensionLevel}`;
+
+            // 昇華タブ内の詳細表示を更新（タブが開いている場合のみ）
+            if (temp.activeTab === 'asc') {
+                const gainVal = document.getElementById('asc-gain-val');
+                const nextApVal = document.getElementById('asc-next-ap-val');
+                if (gainVal) {
+                    const gain = Math.floor(n(game.genFinished) / 2 * n(DEF.asc.ap_gain.effect(game.ascUpgrades.ap_gain), 1));
+                    gainVal.textContent = `+${f(gain)} AP`;
+                }
+                if (nextApVal) {
+                    const nextGen = 2 - (game.genFinished % 2);
+                    nextApVal.textContent = `(あと ${nextGen} 修理完了で +1 AP)`;
+                }
+            }
+
+            const traTab = document.getElementById('tab-tra-btn');
+            if (traTab) {
+                const shouldShow = (n(game.ascensionLevel) >= 5 || n(game.tp) > 0);
+                traTab.style.display = shouldShow ? 'block' : 'none';
+                if (!shouldShow && temp.activeTab === 'tra') switchTab('bp');
+            }
+            refreshUpgradeStates();
+        }
+
+        function refreshUpgradeStates() {
+            document.querySelectorAll('.upgrade-card').forEach(card => {
+                const cost = card.getAttribute('data-cost');
+                const curr = card.getAttribute('data-currency');
+                const reqGen = card.getAttribute('data-req-gen');
+                const reqAsc = card.getAttribute('data-req-asc');
+                const isMax = card.getAttribute('data-max') === 'true';
+
+                let canAfford = !isMax;
+                if (canAfford && cost !== null && curr !== null) {
+                    canAfford = game[curr] >= parseFloat(cost);
+                }
+                if (canAfford && reqGen !== null) {
+                    canAfford = game.genFinished >= parseInt(reqGen);
+                }
+                if (canAfford && reqAsc !== null) {
+                    canAfford = n(game.ascensionLevel) >= parseInt(reqAsc);
+                }
+
+                if (canAfford) card.classList.remove('disabled');
+                else card.classList.add('disabled');
+            });
+        }
+
+        function saveGame() { localStorage.setItem(SAVE_FINAL_KEY, JSON.stringify(game)); notify("SAVED"); }
+        function loadGame() {
+            const d = localStorage.getItem(SAVE_FINAL_KEY) || localStorage.getItem('dbd_inc_evolution_ultra_v4');
+            if (d) {
+                const p = JSON.parse(d);
+                // ディープマージ
+                Object.keys(DEFAULT_GAME).forEach(k => {
+                    if (DEFAULT_GAME[k] !== null && typeof DEFAULT_GAME[k] === 'object') {
+                        game[k] = { ...DEFAULT_GAME[k], ...(p[k] || {}) };
+                    } else {
+                        game[k] = p[k] !== undefined ? p[k] : DEFAULT_GAME[k];
+                    }
+                });
+            }
+        }
+        function fullResetInternal() {
+            if (confirm("全てのデータを完全に削除し、初期状態に戻しますか？（元に戻せません）")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+        function notify(m) { const e = document.getElementById('notify'); e.textContent = m; e.style.opacity = 1; setTimeout(() => e.style.opacity = 0, 1500); }
+
+        init();
+    </script>
+</body>
+
+</html>
